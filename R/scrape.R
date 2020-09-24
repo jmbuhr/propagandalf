@@ -4,21 +4,29 @@ library(dplyr)
 library(purrr)
 library(glue)
 
-N_MAX = 4
+N_MAX <- 4
+BASE_URL <- "https://imgflip.com"
+
+download_meme <- function(link) {
+  file <- link %>%
+    read_html() %>%
+    html_node(css = "#mtm-img") %>%
+    html_attr("src") %>%
+    stringr::str_remove("//")
+  path <- glue("img/{stringr::str_remove(file, 'i.imgflip.com/')}")
+  download.file(file, path)
+}
 
 walk(1:N_MAX, function(i) {
   url <- glue("https://imgflip.com/memesearch?q=lotr&page={i}")
-  paths <- url %>%
+  links <- url %>%
     read_html() %>%
-    html_nodes(css = ".shadow") %>%
-    html_attr("src") %>%
-    paste0("https:", .)
+    html_nodes(css = ".mt-title a") %>%
+    html_attr("href") %>%
+    paste0(BASE_URL, .)
 
-  names <- paths %>%
-    stringr::str_remove("https://") %>%
-    stringr::str_replace_all("/", "_") %>%
-    paste0("img/", .)
-  walk2(paths, names, download.file)
+  links <- links[2:length(links)]
+  walk(links, download_meme)
 })
 
 
